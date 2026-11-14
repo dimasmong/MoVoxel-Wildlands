@@ -44,6 +44,7 @@ export class InputManager {
   onToggleDebug: (() => void) | null = null;
   onToggleCamera: (() => void) | null = null;
   onDropHeld: (() => void) | null = null;
+  canLockPointer: (() => boolean) | null = null;
 
   constructor(private canvas: HTMLCanvasElement) {
     this.touchActive = isTouchDevice();
@@ -121,7 +122,12 @@ export class InputManager {
 
     this.canvas.addEventListener('mousedown', (e) => {
       audio.unlock();
-      if (!this.pointerLocked) return;
+      if (!this.pointerLocked) {
+        if (e.button === 0 && !this.touchActive && this.canLockPointer?.()) {
+          this.requestPointerLock();
+        }
+        return;
+      }
       if (e.button === 0) {
         this.mouseDownLeft = true;
         this.justLeft = true;

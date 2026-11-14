@@ -237,6 +237,8 @@ export class Game {
       if (this.playing && this.ui.screen === 'hud') this.toggleCameraMode();
     };
 
+    this.input.canLockPointer = () => this.playing && this.ui.screen === 'hud';
+
     this.input.onDropHeld = () => {
       if (!this.playing || this.ui.screen !== 'hud' || !this.world) return;
       const held = this.inv.held;
