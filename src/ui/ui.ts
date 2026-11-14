@@ -610,8 +610,8 @@ export class UIManager {
     this.creativePanelEl.classList.toggle('hidden', mode !== 'creative');
     this.renderInventoryGrid();
     this.renderRecipes();
-    this.recipeListEl.scrollTop = 0;
     this.showScreen('inventory');
+    this.recipeListEl.scrollTop = 0;
   }
 
   async openWorldList(): Promise<void> {
