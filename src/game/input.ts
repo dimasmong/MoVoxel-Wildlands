@@ -18,6 +18,9 @@ export class InputManager {
   lookDX = 0;
   lookDY = 0;
   pointerLocked = false;
+  private pointerLockBlocked = false;
+  private lastFallbackX: number | null = null;
+  private lastFallbackY: number | null = null;
 
   // Touch state
   touchActive = false;
@@ -105,28 +108,60 @@ export class InputManager {
   private bindMouse(): void {
     document.addEventListener('pointerlockchange', () => {
       this.pointerLocked = document.pointerLockElement === this.canvas;
-      if (!this.pointerLocked) {
+      this.lastFallbackX = null;
+      this.lastFallbackY = null;
+      if (this.pointerLocked) {
+        this.pointerLockBlocked = false;
+      } else {
         this.mouseDownLeft = false;
         this.mouseDownRight = false;
         this.onEscape?.();
       }
     });
 
+    document.addEventListener('pointerlockerror', () => {
+      this.pointerLockBlocked = true;
+    });
+
     window.addEventListener('mousemove', (e) => {
-      if (!this.pointerLocked) return;
-      // Guard against occasional Chromium huge spikes right on pointer lock acquire
-      if (Math.abs(e.movementX) > 350 || Math.abs(e.movementY) > 350) return;
-      this.lookDX += e.movementX;
-      this.lookDY += e.movementY;
+      if (this.pointerLocked) {
+        // Guard against occasional Chromium huge spikes right on pointer lock acquire
+        if (Math.abs(e.movementX) > 350 || Math.abs(e.movementY) > 350) return;
+        this.lookDX += e.movementX;
+        this.lookDY += e.movementY;
+        return;
+      }
+      if (this.pointerLockBlocked && !this.touchActive && this.canLockPointer?.() && e.target === this.canvas) {
+        if (this.lastFallbackX !== null && this.lastFallbackY !== null) {
+          const dx = e.clientX - this.lastFallbackX;
+          const dy = e.clientY - this.lastFallbackY;
+          if (Math.abs(dx) <= 220 && Math.abs(dy) <= 220) {
+            this.lookDX += dx;
+            this.lookDY += dy;
+          }
+        }
+        this.lastFallbackX = e.clientX;
+        this.lastFallbackY = e.clientY;
+      } else {
+        this.lastFallbackX = null;
+        this.lastFallbackY = null;
+      }
+    });
+
+    this.canvas.addEventListener('mouseleave', () => {
+      this.lastFallbackX = null;
+      this.lastFallbackY = null;
     });
 
     this.canvas.addEventListener('mousedown', (e) => {
       audio.unlock();
       if (!this.pointerLocked) {
-        if (e.button === 0 && !this.touchActive && this.canLockPointer?.()) {
-          this.requestPointerLock();
+        if (!(this.pointerLockBlocked && !this.touchActive && this.canLockPointer?.())) {
+          if (e.button === 0 && !this.touchActive && this.canLockPointer?.()) {
+            this.requestPointerLock(true);
+          }
+          return;
         }
-        return;
       }
       if (e.button === 0) {
         this.mouseDownLeft = true;
@@ -149,7 +184,7 @@ export class InputManager {
     window.addEventListener(
       'wheel',
       (e) => {
-        if (!this.pointerLocked) return;
+        if (!this.pointerLocked && !(this.pointerLockBlocked && !this.touchActive && this.canLockPointer?.())) return;
         e.preventDefault();
         this.wheelDelta += Math.sign(e.deltaY);
       },
@@ -357,13 +392,26 @@ export class InputManager {
     );
   }
 
-  requestPointerLock(): void {
+  requestPointerLock(fromGesture = false): void {
     if (this.touchActive) return;
+    if (typeof this.canvas.requestPointerLock !== 'function') {
+      if (fromGesture) this.pointerLockBlocked = true;
+      return;
+    }
     try {
-      const p = this.canvas.requestPointerLock?.() as unknown as Promise<void> | undefined;
-      p?.catch?.(() => {});
+      const p = this.canvas.requestPointerLock() as unknown as Promise<void> | undefined;
+      p?.catch?.(() => {
+        if (fromGesture) this.pointerLockBlocked = true;
+      });
+      if (fromGesture) {
+        window.setTimeout(() => {
+          if (!this.pointerLocked && this.canLockPointer?.()) {
+            this.pointerLockBlocked = true;
+          }
+        }, 60);
+      }
     } catch {
-      /* ignore if browser blocks */
+      if (fromGesture) this.pointerLockBlocked = true;
     }
   }
 
