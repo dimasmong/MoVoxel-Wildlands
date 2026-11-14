@@ -218,6 +218,7 @@ body {
   padding: 16px;
   background: rgba(9, 12, 16, 0.72);
   pointer-events: auto;
+  z-index: 20;
 }
 
 .modal-card {
@@ -420,6 +421,7 @@ body {
 .hud-layer {
   flex-direction: column;
   justify-content: space-between;
+  z-index: 1;
   padding: calc(10px + var(--safe-top)) calc(12px + var(--safe-right))
     calc(10px + var(--safe-bottom)) calc(12px + var(--safe-left));
 }
@@ -669,6 +671,7 @@ body {
   width: min(860px, 96vw);
   max-height: 92vh;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -759,13 +762,14 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 360px;
+  max-height: min(56vh, 360px);
   overflow-y: auto;
   padding-right: 4px;
 }
 
 .recipe-row {
   cursor: pointer;
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 10px;

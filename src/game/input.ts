@@ -19,6 +19,7 @@ export class InputManager {
   lookDY = 0;
   pointerLocked = false;
   private pointerLockBlocked = false;
+  private suppressUnlockEscape = false;
   private lastFallbackX: number | null = null;
   private lastFallbackY: number | null = null;
 
@@ -42,6 +43,7 @@ export class InputManager {
   doubleSpace = false;
 
   onEscape: (() => void) | null = null;
+  onPointerLockLost: (() => void) | null = null;
   onInventoryToggle: (() => void) | null = null;
   onHotbarSelect: ((slot: number) => void) | null = null;
   onToggleDebug: (() => void) | null = null;
@@ -75,6 +77,7 @@ export class InputManager {
       }
       this.keys.add(code);
 
+      if (e.repeat) return;
       if (code === 'Escape') {
         this.onEscape?.();
       } else if (code === 'KeyE' || code === 'KeyI') {
@@ -112,10 +115,15 @@ export class InputManager {
       this.lastFallbackY = null;
       if (this.pointerLocked) {
         this.pointerLockBlocked = false;
+        this.suppressUnlockEscape = false;
       } else {
         this.mouseDownLeft = false;
         this.mouseDownRight = false;
-        this.onEscape?.();
+        const suppressed = this.suppressUnlockEscape;
+        this.suppressUnlockEscape = false;
+        if (!suppressed) {
+          this.onPointerLockLost?.();
+        }
       }
     });
 
@@ -415,8 +423,31 @@ export class InputManager {
     }
   }
 
+  clearHeldInputs(): void {
+    this.keys.clear();
+    this.justPressed.clear();
+    this.mouseDownLeft = false;
+    this.mouseDownRight = false;
+    this.justLeft = false;
+    this.justRight = false;
+    this.wheelDelta = 0;
+    this.touchJump = false;
+    this.touchMine = false;
+    this.touchPlace = false;
+    this.touchCrouch = false;
+    this.stickX = 0;
+    this.stickY = 0;
+    this.lastFallbackX = null;
+    this.lastFallbackY = null;
+  }
+
   exitPointerLock(): void {
+    this.mouseDownLeft = false;
+    this.mouseDownRight = false;
+    this.justLeft = false;
+    this.justRight = false;
     if (document.pointerLockElement === this.canvas) {
+      this.suppressUnlockEscape = true;
       document.exitPointerLock();
     }
   }

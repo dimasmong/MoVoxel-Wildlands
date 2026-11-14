@@ -157,6 +157,7 @@ export class Game {
       onRespawn: () => this.respawnPlayer(),
       onSettingsChanged: (s) => this.applySettings(s),
       onToggleCamera: () => this.toggleCameraMode(),
+      onOpenInventory: () => this.openInventoryScreen(false),
       onPauseToggle: () => this.togglePause(),
       getWorlds: () => saveStore.listWorlds(),
     });
@@ -208,16 +209,21 @@ export class Game {
       } else if (this.ui.screen === 'hud') {
         this.pauseGame();
       } else if (this.ui.screen === 'pause' && !this.input.pointerLocked) {
-        // Already paused
+        this.resumeGame();
+      }
+    };
+
+    this.input.onPointerLockLost = () => {
+      if (!this.playing) return;
+      if (this.ui.screen === 'hud') {
+        this.pauseGame();
       }
     };
 
     this.input.onInventoryToggle = () => {
       if (!this.playing || !this.meta) return;
       if (this.ui.screen === 'hud') {
-        this.input.exitPointerLock();
-        this.ui.openInventory(false, this.meta.mode);
-        this.ui.updateTouchVisibility(false);
+        this.openInventoryScreen(false);
       } else if (this.ui.screen === 'inventory') {
         this.resumeGame();
       }
@@ -394,13 +400,23 @@ export class Game {
   }
 
   private enterGameplayHUD(): void {
+    (document.activeElement as HTMLElement | null)?.blur?.();
     this.ui.showScreen('hud');
     this.ui.updateTouchVisibility(true);
     this.input.requestPointerLock();
   }
 
+  private openInventoryScreen(atBench: boolean): void {
+    if (!this.playing || !this.meta) return;
+    this.input.clearHeldInputs();
+    this.input.exitPointerLock();
+    this.ui.openInventory(atBench, this.meta.mode);
+    this.ui.updateTouchVisibility(false);
+  }
+
   private pauseGame(): void {
     if (!this.playing || !this.meta) return;
+    this.input.clearHeldInputs();
     this.input.exitPointerLock();
     this.ui.updateTouchVisibility(false);
     this.ui.setPauseSummary(
@@ -935,9 +951,7 @@ export class Game {
 
     // 1. Clicking a placed Tinker Bench opens the full crafting menu (unless sneaking to place on it)
     if (hit && hit.id === B.BENCH && !this.player.crouching) {
-      this.input.exitPointerLock();
-      this.ui.openInventory(true, meta.mode);
-      this.ui.updateTouchVisibility(false);
+      this.openInventoryScreen(true);
       return;
     }
 

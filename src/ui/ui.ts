@@ -25,6 +25,7 @@ export interface UICallbacks {
   onRespawn: () => void;
   onSettingsChanged: (s: Settings) => void;
   onToggleCamera: () => void;
+  onOpenInventory: () => void;
   onPauseToggle: () => void;
   getWorlds: () => Promise<{ worlds: WorldMeta[]; broken: string[] }>;
 }
@@ -482,7 +483,7 @@ export class UIManager {
 
     // HUD top-right buttons
     click('btn-hud-cam', () => this.cb.onToggleCamera());
-    click('btn-hud-inv', () => this.openInventory(false));
+    click('btn-hud-inv', () => this.cb.onOpenInventory());
     click('btn-hud-pause', () => this.cb.onPauseToggle());
 
     click('btn-inv-close', () => this.cb.onResume());
@@ -824,6 +825,7 @@ export class UIManager {
   }
 
   private renderRecipes(): void {
+    const prevScroll = this.recipeListEl.scrollTop;
     this.recipeListEl.innerHTML = '';
     for (const r of RECIPES) {
       const status = canCraft(r, this.inv, this.atBench);
@@ -855,6 +857,7 @@ export class UIManager {
       });
       this.recipeListEl.appendChild(card);
     }
+    this.recipeListEl.scrollTop = prevScroll;
   }
 
   private handleCraftClick(r: Recipe): void {
