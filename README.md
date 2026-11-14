@@ -1,122 +1,137 @@
 # MoVoxel: Wildlands
 
-**MoVoxel: Wildlands** is an original, standalone 3D voxel survival and building sandbox for Web, Desktop, and Android browsers, built with **Vite + TypeScript + Three.js (r187)**.
+**Live Game:** [https://movoxel-wildlands.vercel.app](https://movoxel-wildlands.vercel.app)
 
-It captures the core gameplay loops of a block-based survival sandbox—procedural cubic terrain, first-person exploration, block mining and placement, resource gathering, tool progression, crafting, survival vitals, day/night atmosphere, and persistent local saves—with an **original visual identity**, **procedurally painted 16×16 pixel textures**, **original creatures** (*Mossback* & *Gloomling*), and **synthesized Web Audio**.
+**MoVoxel: Wildlands** is an original browser-based 3D voxel survival and building sandbox built with TypeScript, Vite, and Three.js (r187). Explore deterministic procedural worlds with grassy plains, pine and oakwood forests, desert dunes, caves, and wardstone rings while mining blocks, gathering materials, crafting tools, managing survival vitals, and persisting your builds locally in IndexedDB.
 
----
+## Gameplay Screenshots
 
-## Quick Start
+| Main Menu (Live 3D Voxel Panorama) | Sunlit Forest Exploration |
+|---|---|
+| ![Main Menu](docs/screenshots/main-menu.png) | ![Exploration](docs/screenshots/exploration.png) |
 
-```bash
-cd movoxel-wildlands
-npm install
-npm run dev      # Starts local dev server at http://localhost:5178/
-npm run build    # Type-checks (tsc --noEmit) and builds static bundle in dist/
-npm run preview  # Previews the production build locally
-```
+| Mining & Block Placement | Field Pack & Crafting |
+|---|---|
+| ![Mining and Building](docs/screenshots/mining-building.png) | ![Inventory and Crafting](docs/screenshots/inventory-crafting.png) |
 
-The production output in `dist/` uses relative asset paths (`base: './'`) so it can be deployed directly to **Vercel**, **GitHub Pages**, or any static host with zero backend dependencies.
+## Feature Overview
 
----
+- **Procedural Cubic Worlds**: Seeded 2D and 3D Simplex noise generates multi-biome landscapes (Plains, Pine & Oakwood Forests, Sunbleached Shores), ponds, underground caves, ore veins (*Cinder Ore*, *Rustvein Ore*, *Glimmer Ore*), and *Wardstone* rings off-thread via Web Workers with a main-thread fallback.
+- **Chunked Meshing & Lighting**: `16 x 128 x 16` chunk columns cull hidden neighbor faces, separate Opaque/Cutout, Cross Foliage, and Transparent Water geometry passes, and bake 4-level per-vertex ambient occlusion plus sky-exposure lighting.
+- **Mining, Building & Crafting**: Raycast block targeting with progress crack overlays, survival drops and pickup, 9-slot hotbar + 27-slot backpack, tool durability, and hand + Tinker Bench crafting recipes.
+- **Survival & Atmosphere**: Health and stamina/hunger vitals, dynamic sun/moon sky dome with stars and drifting cubic clouds, twilight fireflies, *Mossback* and *Gloomling* creatures, Creative mode with double-jump flight, and procedural Web Audio SFX.
+- **Fixed-Step Physics**: 60 Hz axis-separated AABB voxel collision with render interpolation and crouch edge protection.
+
+## Technology Stack
+
+- **Renderer**: Three.js (`^0.187.0`) WebGL2 / WebGL
+- **Language & Build**: TypeScript (`^7.0.2`), Vite (`^8.3.8`)
+- **World Generation**: Dedicated ES Module Web Worker (`src/world/generator.worker.ts`)
+- **Audio**: Synthesized procedural Web Audio API (`src/audio/audio.ts`)
+- **Persistence**: IndexedDB (`movoxel-wildlands`) + `localStorage` (`movoxel-wildlands.settings.v1`)
+- **Hosting**: Vercel (static production bundle via GitHub integration)
 
 ## Controls
 
 ### Desktop (Keyboard & Mouse)
+
 | Input | Action |
 |---|---|
-| **W / A / S / D** (or Arrow Keys) | Move (physical keycodes; layout-independent) |
-| **Mouse** (Pointer Lock) | First-person look & crosshair aim |
-| **Space** | Jump / Swim up / **Double-tap Space** in Creative to toggle flight |
+| **W / A / S / D** or **Arrow Keys** | Move (layout-independent physical keycodes) |
+| **Mouse** (Click canvas to lock pointer) | First-person look & aim (with unlocked-cursor fallback in restricted webviews) |
+| **Space** | Jump / Swim up / Double-tap in Creative mode to toggle flight |
 | **Left Shift** | Sprint (or fast flight) |
-| **Left Ctrl / C** | Sneak / Crouch (prevents walking off block edges; lowers flight) |
+| **Left Ctrl / C** | Sneak / Crouch (edge-safe sneaking, lowers flight) |
 | **Left Click (Hold)** | Mine targeted block / Attack creature |
-| **Right Click** | Place selected block / Eat held food / Open **Tinker Bench** |
-| **1 – 9** or **Mouse Wheel** | Select hotbar slot |
+| **Right Click** | Place block / Eat held food / Use Tinker Bench |
+| **1 - 9** or **Mouse Wheel** | Select hotbar slot |
 | **E** or **I** | Open / Close Field Pack & Crafting |
-| **Q** | Toss 1 item from held stack |
-| **F5** or **V** | Toggle First-Person / Third-Person Camera |
-| **F3** | Toggle FPS, Draw Calls, Chunk & Biome Telemetry |
-| **Esc** | Pause / Release Pointer Lock / Close Modal |
+| **Q** | Toss 1 item from selected hotbar slot |
+| **F5** or **V** | Toggle First-Person / Third-Person camera |
+| **F3** | Toggle FPS, draw calls, chunks, coordinates, biome & day telemetry |
+| **Esc** | Pause / Release pointer lock / Close modal |
 
-### Mobile / Android (Multi-Touch)
+### Mobile & Touch Devices
+
 - **Left Virtual Joystick**: Analog movement with radial deadzone; push to outer ring to sprint.
-- **Right Touch Region**: Drag to look around simultaneously while moving and jumping.
-- **Action Buttons**: Accessible **Mine**, **Place**, **Jump**, **Sneak**, **Fly** (Creative), and **Pack** buttons.
-- **Hotbar**: Tap any of the 9 slots directly with your thumb.
-- **Portrait Notice**: Shows a non-blocking banner on narrow portrait screens suggesting landscape mode.
+- **Right Touch Region**: Drag anywhere on the right side to look around while moving.
+- **On-Screen Action Buttons**: **Mine**, **Place**, **Jump**, **Sneak**, **Fly** (Creative mode), and **Pack**.
+- **Hotbar**: Tap any slot directly to switch held items.
+- **Orientation Notice**: Non-blocking landscape suggestion banner on narrow portrait viewports with a **Dismiss** button.
 
----
+## Installation & Local Development
 
-## Architecture & Coordinate Conventions
+Requires Node.js 20+ (tested on Node 24.22.1 / npm 11.19.1).
 
-- **Coordinate Space**: `+Y` is up. `1` world unit = `1` cubic block. Block `(x, y, z)` occupies `[x, x+1) × [y, y+1) × [z, z+1)`.
-- **Chunk Model**: `16 × 128 × 16` columns (`CHUNK_SIZE = 16`, `WORLD_HEIGHT = 128`, `SEA_LEVEL = 34`), stored in flat `Uint8Array(32768)` buffers indexed by `x + (z << 4) + (y << 8)` so vertical columns are contiguous.
-- **Deterministic Seeded Generation (`src/world/generator.ts`)**:
-  - Uses our own `mulberry32` PRNG, integer spatial hashes (`hash2`/`hash3`), and `SimplexNoise` instances with independent child seeds per noise field so elevation, temperature, and moisture never correlate into bands.
-  - **Biomes**: Grassy Plains, Pine & Oakwood Forests, and Sunbleached Shores/Dunes with smooth transitions, ponds, cave tunnels, ore veins (*Cinder Ore*, *Rustvein Ore*, *Glimmer Ore*), and *Wardstone* ring landmarks.
-  - Runs off-thread in a **Web Worker pool** (`src/world/generator.worker.ts`) with main-thread fallback.
-- **Chunk Meshing (`src/world/mesher.ts`)**:
-  - Emits **only exposed faces** between non-occluding neighbors across 3×3 padded chunk neighborhoods.
-  - Separates geometry into three batched passes per chunk: **Opaque/Cutout** (`alphaTest: 0.5`), **Cross Foliage**, and **Transparent Water** (`depthWrite: false`), avoiding per-cube `THREE.Mesh` objects and keeping draw calls low.
-  - Computes per-vertex ambient occlusion (4-level curve) and smoothed sky-exposure lighting, flipping quad diagonals when AO is anisotropic.
-  - Rebuilds **only dirty chunks** and adjacent border chunks when blocks are mined or placed on a chunk boundary (`x = 0/15`, `z = 0/15`).
-- **Physics & Collision (`src/game/player.ts`)**:
-  - Runs on a **fixed 60 Hz timestep** (`FIXED_DT = 1/60`) with sub-stepped axis-separated AABB voxel collision so the player never tunnels through thin walls or falls through terrain.
-  - Rendering interpolates between `prev` and current physics states each frame (`camera-systems` + `physics-tuning`).
+```bash
+git clone https://github.com/dimasmong/MoVoxel-Wildlands.git
+cd MoVoxel-Wildlands
+npm ci
+```
 
----
+### Development Commands
 
-## Save & Load Persistence (`src/save/db.ts`)
+```bash
+npm run dev        # Start local Vite development server
+npm run typecheck  # Run strict TypeScript checking (tsc --noEmit)
+npm run build      # Type-check and build static production bundle into dist/
+npm run preview    # Preview the built dist/ bundle locally
+```
 
-- **IndexedDB (`movoxel-wildlands`)** stores:
-  - `worlds`: World metadata, seed, mode, player position/orientation/health/hunger/spawn, inventory stacks + tool durability, time-of-day, and `version: 1`.
-  - `backups`: Previous good world snapshot written atomically in the same transaction before updating `worlds`, providing automatic fallback if a save record is corrupted.
-  - `chunks`: Sparse per-chunk player block edits (`[localIndex, blockId, ...]`), so regenerating deterministic terrain + replaying edits reproduces every mined and placed block across page reloads.
-- **Settings (`localStorage`)**: Stores lightweight preferences (`movoxel-wildlands.settings.v1`) such as FOV, sensitivity, render distance, quality preset, audio sliders, and accessibility toggles.
+### Production Build
 
----
+`npm run build` runs `tsc --noEmit && vite build` using `base: './'` and `target: 'es2022'` (`vite.config.ts`). All geometry, textures, icons, shaders, Web Worker code, and audio synthesis are compiled directly into `dist/` with relative asset paths and zero external runtime CDN dependencies.
 
-## Module Structure
+## How World Saving Works
+
+- **IndexedDB (`movoxel-wildlands`)** (`src/save/db.ts`):
+  - `worlds`: World metadata, seed, expedition mode (`survival` or `creative`), player position/orientation/vitals/spawn, inventory stacks, tool durability, world clock, and `version: 1`.
+  - `backups`: Previous known-good world snapshot written in the same transaction before updating `worlds`, providing automatic fallback recovery if a primary record fails validation.
+  - `chunks`: Sparse per-chunk block overrides (`[localIndex, blockId, ...]`), allowing deterministic terrain regeneration plus fast replay of player block edits across page reloads.
+- **Settings (`localStorage`)** (`src/settings.ts`): Stores UI, camera FOV, mouse sensitivity, render distance, quality preset, and audio volume settings under `movoxel-wildlands.settings.v1`.
+
+## Deployment
+
+This project is deployed on Vercel with GitHub integration connected to the `main` branch of `dimasmong/MoVoxel-Wildlands`. Every push to `main` triggers an automatic production build and deployment to:
+
+- **Production URL**: [https://movoxel-wildlands.vercel.app](https://movoxel-wildlands.vercel.app)
+- **Framework Preset**: Vite
+- **Install Command**: `npm ci`
+- **Build Command**: `npm run build`
+- **Output Directory**: `dist`
+- **Production Branch**: `main`
+
+To deploy manually via the Vercel CLI:
+
+```bash
+npx vercel --prod
+```
+
+## Architecture Overview
 
 ```text
-movoxel-wildlands/
-├── index.html
-├── package.json
-├── tsconfig.json
-├── vite.config.ts
+├── docs/screenshots/            # Verified gameplay screenshots
+├── index.html                   # App shell & viewport configuration
+├── package.json                 # Dependencies & scripts
+├── package-lock.json            # Locked npm dependency tree
+├── tsconfig.json                # Strict TypeScript settings
+├── vite.config.ts               # Vite relative base & ES worker build config
 └── src/
-    ├── main.ts                  # Entry point
-    ├── style.css                # Responsive HUD & menu styling
-    ├── settings.ts              # Quality presets & localStorage settings
-    ├── core/
-    │   ├── constants.ts         # Chunk dimensions, tick rate, save version
-    │   ├── rng.ts               # Deterministic FNV-1a, Mulberry32, spatial hashes
-    │   └── noise.ts             # Seeded 2D/3D Simplex noise + fBm
-    ├── world/
-    │   ├── registry.ts          # Block & item definitions, hardness, tool tiers
-    │   ├── generator.ts         # Biomes, caves, ores, trees, Wardstone landmarks
-    │   ├── generator.worker.ts  # Background chunk generation worker
-    │   ├── chunk.ts             # Compact Uint8Array chunk container
-    │   ├── mesher.ts            # Exposed-face culling, vertex AO, sky lighting
-    │   └── world.ts             # Chunk streaming, border dirtying, mesh disposal
-    ├── render/
-    │   ├── textures.ts          # Procedural 16x16 pixel-art atlas & crack stages
-    │   ├── icons.ts             # Isometric block & pixel tool/item icons
-    │   ├── materials.ts         # Nearest-neighbor sRGB materials & emissive map
-    │   ├── sky.ts               # Day/night dome, sun, moon, stars, blocky clouds
-    │   ├── effects.ts           # Selection wireframe, crack overlay, debris, fireflies
-    │   └── hand.ts              # First-person arm & held item/block view-model
-    ├── game/
-    │   ├── player.ts            # Fixed-step AABB collision, crouch guard, flight
-    │   ├── raycast.ts           # Amanatides & Woo DDA voxel raycaster
-    │   ├── inventory.ts         # 9-slot hotbar + 27-slot backpack + durability
-    │   ├── crafting.ts          # Atomic recipes (hand & Tinker Bench)
-    │   ├── entities.ts          # Collectible drops + Mossback & Gloomling AI
-    │   ├── input.ts             # Pointer lock, physical keys, multi-touch joystick
-    │   └── game.ts              # Main loop, survival rules, camera & autosave
-    ├── save/
-    │   └── db.ts                # Versioned IndexedDB persistence + backup recovery
-    └── audio/
-        └── audio.ts             # Synthesized Web Audio SFX & dynamic wind/birds
+    ├── main.ts                  # Application entry point
+    ├── settings.ts              # Quality presets & localStorage persistence
+    ├── style.css                # HUD, modal, and mobile touch styles
+    ├── audio/audio.ts           # Procedural Web Audio synthesizer
+    ├── core/                    # Constants, Mulberry32 PRNG, Simplex noise
+    ├── world/                   # Block registry, chunks, mesher, worker & world
+    ├── render/                  # Pixel atlas, icons, materials, sky, effects, hand
+    ├── game/                    # Player AABB physics, DDA raycast, inventory, crafting, AI, loop
+    ├── save/db.ts               # Versioned IndexedDB persistence & backup recovery
+    └── ui/ui.ts                 # HUD, title screen, settings, inventory & pause modals
 ```
+
+## Known Limitations
+
+- **Local Persistence Only**: Saved worlds and settings live in browser storage (IndexedDB and `localStorage`) per origin and device; there is no cloud account sync or cross-device world transfer.
+- **Single-Player Sandbox**: There is no online multiplayer or server synchronization.
+- **Browser Pointer Lock Policies**: Desktop browsers require a canvas click before granting hardware mouse lock; restricted embedded webviews that block Pointer Lock fall back to unlocked-cursor camera aiming while the cursor stays over the canvas.
+- **Static Browser Constraints**: Very high render distances on low-powered GPUs or mobile devices can lower frame rates; lowering Render Distance or Quality in **Settings & Controls** restores headroom.
